@@ -10,9 +10,15 @@ Deep learning–based pancreatic tumor segmentation in diagnostic MRI using 3D n
 
 ## Overview
 
-Pancreatic tumor segmentation in diagnostic MRI is a challenging medical image analysis task due to low tumor contrast, irregular tumor boundaries, anatomical variability, and limited availability of expert-annotated data. This project explores a deep learning–based segmentation framework using the PANTHER Challenge dataset.
+This repository contains the implementation and experimental analysis of a pancreatic tumor segmentation framework using diagnostic T1-weighted MRI scans from the PANTHER Challenge dataset. The project explores supervised and semi-supervised deep learning approaches using 3D nnU-Net and introduces a component-guided fusion strategy to improve segmentation reliability and recover difficult tumor cases.
 
-The project first trains supervised 3D nnU-Net models on labeled T1-weighted MRI data. Then, unlabeled MRI scans are used through pseudo-label generation and filtering. The filtered pseudo-labels are combined with the original labeled dataset for semi-supervised retraining. Finally, a component-guided fusion strategy is applied to combine supervised and semi-supervised predictions, aiming to recover failure cases and improve inference reliability.
+The framework focuses on:
+
+- Supervised 3D nnU-Net training
+- Semi-supervised retraining using filtered pseudo-labels
+- Cross-fold evaluation
+- Component-guided fusion
+- Reliability-focused inference analysis
 
 ---
 
@@ -21,13 +27,105 @@ The project first trains supervised 3D nnU-Net models on labeled T1-weighted MRI
 Dataset Source: PANTHER Challenge  
 https://panther.grand-challenge.org/
 
-The project uses **Task 1 diagnostic T1-weighted MRI data** containing:
+The project uses:
 
-- Labeled MRI scans
-- Unlabeled MRI scans
-- Ground truth pancreas and tumor annotations
+- Diagnostic T1-weighted MRI scans
+- Labeled MRI data
+- Unlabeled MRI data
+- Pancreas and tumor segmentation masks
 
 Final evaluation was conducted on **92 labeled T1 MRI cases**.
+
+---
+
+# Repository Structure
+
+```text
+PANTHER-SSL-Fusion/
+│
+├── 3-fold evaluation.ipynb
+├── fin analysis.ipynb
+├── multiclass-psuedomask.ipynb
+├── train2.ipynb
+├── weighted_nnUNet.ipynb
+│
+├── results/
+├── figures/
+├── README.md
+└── LICENSE
+```
+
+---
+
+# Notebook Descriptions
+
+## train2.ipynb
+
+Main supervised training notebook for 3D nnU-Net segmentation on labeled T1 MRI scans.
+
+Main tasks:
+
+- Data loading
+- MRI preprocessing
+- nnU-Net training
+- Cross-validation setup
+- Baseline segmentation experiments
+
+---
+
+## multiclass-psuedomask.ipynb
+
+Pseudo-label generation and filtering pipeline for semi-supervised learning.
+
+Main tasks:
+
+- Pseudo-mask generation
+- Connected-component filtering
+- Pancreas-guided tumor filtering
+- Removal of noisy tumor predictions
+- Semi-supervised dataset preparation
+
+---
+
+## weighted_nnUNet.ipynb
+
+Weighted and fusion-based nnU-Net experiments.
+
+Main tasks:
+
+- Weighted prediction fusion
+- Component-guided fusion
+- Reliability-focused tumor recovery
+- Failure case correction
+- Ensemble refinement
+
+---
+
+## 3-fold evaluation.ipynb
+
+Cross-fold quantitative evaluation notebook.
+
+Main tasks:
+
+- Dice evaluation
+- IoU computation
+- Precision and recall analysis
+- Hausdorff Distance evaluation
+- Fold-wise performance comparison
+
+---
+
+## fin analysis.ipynb
+
+Final qualitative and quantitative analysis notebook.
+
+Main tasks:
+
+- Per-case evaluation
+- Failure-case visualization
+- Axial, sagittal, and coronal comparisons
+- Error map generation
+- Final result analysis
 
 ---
 
@@ -35,58 +133,46 @@ Final evaluation was conducted on **92 labeled T1 MRI cases**.
 
 The proposed pipeline consists of the following stages:
 
-1. MRI preprocessing using the nnU-Net pipeline
+1. MRI preprocessing and normalization
 2. Supervised 3D nnU-Net training
 3. Pseudo-label generation on unlabeled MRI scans
 4. Pseudo-label filtering
 5. Semi-supervised retraining
 6. Component-guided fusion
-7. Quantitative and qualitative evaluation
+7. Cross-fold evaluation
+8. Qualitative and quantitative analysis
 
 ---
 
 # Pseudo-Label Filtering
 
-To improve pseudo-label quality before retraining, a filtering strategy was applied:
+To improve pseudo-label quality, a filtering process was applied before semi-supervised retraining.
 
-- Majority voting across fold predictions
-- Largest connected component retention for pancreas segmentation
-- Pancreas-guided tumor gating using a dilated pancreas mask
-- Removal of anatomically implausible tumor regions
-- Removal of very small tumor components
+The filtering pipeline includes:
 
-This filtering process reduces noisy pseudo-labels and improves semi-supervised retraining stability.
+- Majority voting across folds
+- Largest connected component selection
+- Pancreas-guided tumor gating
+- Removal of anatomically implausible regions
+- Small tumor component suppression
+
+This process reduces noisy pseudo-labels and stabilizes semi-supervised training.
 
 ---
 
 # Component-Guided Fusion
 
-The final prediction is generated through a component-guided fusion strategy that combines supervised and semi-supervised outputs.
+The final segmentation is generated using a component-guided fusion algorithm.
 
-The fusion process:
+Instead of simple averaging, the fusion strategy:
 
-- Preserves stable tumor regions from supervised predictions
+- Preserves reliable supervised tumor regions
 - Recovers missed tumors from semi-supervised predictions
-- Removes anatomically implausible components
-- Reduces false positives
-- Improves segmentation reliability
+- Removes noisy false positives
+- Applies connected-component analysis
+- Produces more stable and reliable inference
 
-Unlike simple probability averaging, the proposed fusion operates at the connected-component level.
-
----
-
-# Models Evaluated
-
-| Model | Description |
-|---|---|
-| old_fold0 | Supervised 3D nnU-Net fold 0 |
-| old_fold1 | Supervised 3D nnU-Net fold 1 |
-| old_fold2 | Supervised 3D nnU-Net fold 2 |
-| new_fold0 | Semi-supervised retrained fold 0 |
-| new_fold1 | Semi-supervised retrained fold 1 |
-| new_fold2 | Semi-supervised retrained fold 2 |
-| unionF2 | Union fusion |
-| guidedF2 | Component-guided fusion |
+The fusion framework significantly reduces catastrophic tumor omission cases.
 
 ---
 
@@ -125,32 +211,43 @@ The component-guided fusion model achieved the most reliable tumor segmentation 
 
 # Key Findings
 
-- Supervised models achieved strong average Dice scores but occasionally failed completely on difficult tumor cases.
+- Supervised models achieved strong average Dice scores but occasionally failed on difficult tumor cases.
 - Semi-supervised retraining reduced catastrophic tumor omission cases.
 - Pseudo-label filtering improved pseudo-mask quality.
-- Component-guided fusion recovered missed tumors and reduced noisy detections.
+- Component-guided fusion recovered missed tumors while suppressing noisy predictions.
 - Reliability improved even when average Dice improvements were modest.
 
 ---
 
-# Qualitative Results
+# Qualitative Analysis
 
 The framework demonstrated:
 
 - Recovery of tumors missed by supervised models
 - Reduction of noisy tumor boundaries
-- Improved overlap with ground truth
-- Better robustness across difficult cases
+- Better overlap with ground truth
+- Improved robustness across difficult cases
 
-Representative qualitative examples include:
+Representative examples include:
 
-- Complete tumor recovery after semi-supervised retraining
-- Fusion-based cleanup of fragmented tumor predictions
-- Improved boundary consistency across axial, sagittal, and coronal views
+- Supervised model completely missing the tumor while semi-supervised learning recovered it
+- Fusion correcting fragmented tumor predictions
+- Improved anatomical consistency across axial, sagittal, and coronal planes
 
 ---
 
+# Releases
 
+The repository releases section contains:
+
+- Real-time inference application
+- Web-based summary and visualization application
+- Experimental model outputs
+- Demo files and utilities
+
+These applications are provided separately as compressed release packages.
+
+---
 
 # Main Dependencies
 
@@ -170,111 +267,74 @@ tqdm
 
 ---
 
-# Training Pipeline
+# Installation
 
-## Step 1: Prepare Dataset
-
-Convert the PANTHER Task 1 MRI dataset into nnU-Net format.
-
-Expected structure:
-
-```text
-Dataset110_PANTHER_T1/
-├── imagesTr/
-├── labelsTr/
-├── imagesTs/
-└── dataset.json
-```
-
----
-
-## Step 2: Train Supervised Models
+Clone the repository:
 
 ```bash
-nnUNetv2_plan_and_preprocess -d 110 --verify_dataset_integrity
+git clone https://github.com/your-username/PANTHER-SSL-Fusion.git
+cd PANTHER-SSL-Fusion
+```
 
-nnUNetv2_train 110 3d_fullres 0
-nnUNetv2_train 110 3d_fullres 1
-nnUNetv2_train 110 3d_fullres 2
+Create virtual environment:
+
+```bash
+python -m venv venv
+```
+
+Activate environment:
+
+```bash
+# Windows
+venv\Scripts\activate
+
+# Linux/macOS
+source venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
 ```
 
 ---
 
-## Step 3: Generate Pseudo Labels
+# Running the Notebooks
 
-Run pseudo-label generation:
+Launch Jupyter Notebook:
 
-```text
-notebooks/pseudo_label_generation.ipynb
+```bash
+jupyter notebook
 ```
 
----
+Run notebooks in the following order:
 
-## Step 4: Filter Pseudo Labels
-
-Run pseudo-label filtering:
-
-```text
-notebooks/pseudo_label_filtering.ipynb
-```
-
----
-
-## Step 5: Semi-Supervised Retraining
-
-```text
-notebooks/semi_supervised_training.ipynb
-```
-
----
-
-## Step 6: Component-Guided Fusion
-
-```text
-notebooks/component_guided_fusion.ipynb
-```
-
----
-
-## Step 7: Evaluation
-
-```text
-notebooks/evaluation_analysis.ipynb
-```
-
----
-
-# Result Files
-
-Example evaluation files:
-
-```text
-summary_by_model_class_cleaned.csv
-per_instance_metrics_cleaned.csv
-cv_per_case_dice_oldF.csv
-```
+1. train2.ipynb
+2. multiclass-psuedomask.ipynb
+3. weighted_nnUNet.ipynb
+4. 3-fold evaluation.ipynb
+5. fin analysis.ipynb
 
 ---
 
 # Contributions
 
-This project focuses not only on improving average segmentation accuracy but also on improving segmentation reliability and reducing catastrophic failure cases.
+Main contributions of this project include:
 
-Main contributions include:
-
-- Semi-supervised pancreatic tumor segmentation using filtered pseudo-labels
-- Anatomy-aware pseudo-mask filtering
-- Component-guided fusion for reliable inference
-- Failure-case recovery analysis
+- Semi-supervised pancreatic tumor segmentation
+- Pseudo-label filtering for reliable retraining
+- Component-guided fusion strategy
 - Reliability-focused evaluation
+- Failure-case recovery analysis
 
 ---
 
 # Limitations
 
-- Only T1-weighted MRI data were used
+- Only diagnostic T1 MRI data were used
 - No external clinical validation dataset
-- Pseudo-label quality affects retraining
+- Semi-supervised performance depends on pseudo-label quality
 - Fusion increases computational complexity
 - Intended for research use only
 
@@ -285,23 +345,23 @@ Main contributions include:
 Potential future improvements include:
 
 - Multi-modal MRI integration
-- Uncertainty-aware semi-supervised learning
-- Transformer-based fusion methods
-- External dataset validation
+- Transformer-based segmentation models
+- Uncertainty-aware pseudo-labeling
 - Faster inference optimization
-- Clinical deployment studies
+- External clinical validation
+- Real-time clinical deployment
 
 ---
 
 # References
 
-[1] P. Rawla, T. Sunkara, and V. Gaduputi, “Epidemiology of pancreatic cancer: Global trends, etiology and risk factors,” World Journal of Oncology, vol. 10, no. 1, pp. 10–27, 2019.
+[1] P. Rawla, T. Sunkara, and V. Gaduputi, “Epidemiology of pancreatic cancer: Global trends, etiology and risk factors,” *World Journal of Oncology*, vol. 10, no. 1, pp. 10–27, 2019.
 
-[2] O. Ronneberger, P. Fischer, and T. Brox, “U-Net: Convolutional Networks for Biomedical Image Segmentation,” MICCAI, 2015.
+[2] O. Ronneberger, P. Fischer, and T. Brox, “U-Net: Convolutional Networks for Biomedical Image Segmentation,” *MICCAI*, 2015.
 
-[3] F. Isensee et al., “nnU-Net: A self-configuring method for deep learning-based biomedical image segmentation,” Nature Methods, 2021.
+[3] F. Isensee et al., “nnU-Net: A self-configuring method for deep learning-based biomedical image segmentation,” *Nature Methods*, 2021.
 
-[4] W. Liang et al., “Deep learning for segmentation of pancreatic tumors on multi-parametric MRI,” International Journal of Radiation Oncology, Biology, Physics, 2020.
+[4] W. Liang et al., “Deep learning for segmentation of pancreatic tumors on multi-parametric MRI,” *International Journal of Radiation Oncology, Biology, Physics*, 2020.
 
 [5] PANTHER Challenge. Available: https://panther.grand-challenge.org/
 
@@ -311,7 +371,7 @@ Potential future improvements include:
 
 # Citation
 
-If you use this repository or build upon this project, please cite the PANTHER Challenge dataset and the nnU-Net framework.
+If you use this repository or build upon this project, please cite the PANTHER Challenge dataset and nnU-Net framework.
 
 ---
 
